@@ -13,6 +13,16 @@ type Service struct {
 	p goprocess.Process
 }
 
+// Process .
+func (s *Service) Process() goprocess.Process {
+	return s.p
+}
+
+// Go .
+func (s *Service) Go(f goprocess.ProcessFunc) goprocess.Process {
+	return s.p.Go(f)
+}
+
 // Start the process
 func (s *Service) Start() error {
 	s.p = goprocess.Go(s.f)
