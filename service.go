@@ -31,7 +31,8 @@ func (h Hook) Stop(ctx context.Context) error {
 	return h.OnStop(ctx)
 }
 
-// MultiService is a collection of hooks that are run in-order on both startup and shutdown.
+// MultiService is a collection of hooks that are run in-order on startup, and in
+// reverse order (deferred-order) on shutdown.
 type MultiService []Service
 
 // Append a hook to the MultiService
@@ -48,7 +49,7 @@ func (ms MultiService) Start(ctx context.Context) error {
 
 // Stop the service by running each hook's OnStop method.
 func (ms MultiService) Stop(ctx context.Context) error {
-	return ms.foreach(ctx, func(ctx context.Context, s Service) error {
+	return ms.reverse().foreach(ctx, func(ctx context.Context, s Service) error {
 		return s.Stop(ctx)
 	})
 }
@@ -61,4 +62,13 @@ func (ms MultiService) foreach(ctx context.Context, f func(context.Context, Serv
 	}
 
 	return
+}
+
+func (ms MultiService) reverse() MultiService {
+	for i := len(ms)/2 - 1; i >= 0; i-- {
+		opp := len(ms) - 1 - i
+		ms[i], ms[opp] = ms[opp], ms[i]
+	}
+
+	return ms
 }
