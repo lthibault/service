@@ -2,9 +2,9 @@ package serviceproc
 
 import "github.com/jbenet/goprocess"
 
-// GoChild .
-func GoChild(parent goprocess.Process, f goprocess.ProcessFunc) *Service {
-
+// Go .
+func Go(f goprocess.ProcessFunc) *Service {
+	return &Service{f: f}
 }
 
 // Service .
@@ -15,7 +15,7 @@ type Service struct {
 
 // Start the process
 func (s *Service) Start() error {
-	s.p = s.f()
+	s.p = goprocess.Go(s.f)
 	return nil
 }
 
