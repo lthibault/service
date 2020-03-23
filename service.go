@@ -36,8 +36,9 @@ func (h Hook) Stop(ctx context.Context) error {
 type MultiService []Service
 
 // Append a hook to the MultiService
-func (ms *MultiService) Append(s Service) {
+func (ms *MultiService) Append(s Service) MultiService {
 	*ms = append(*ms, s)
+	return *ms
 }
 
 // Start the service by running each hook's OnStart method.
