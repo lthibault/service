@@ -1,5 +1,7 @@
 package service
 
+import "go.uber.org/multierr"
+
 // Service .
 type Service interface {
 	Start() error
@@ -40,27 +42,22 @@ func (ms *MultiService) Append(s Service) *MultiService {
 }
 
 // Start the service by running each hook's OnStart method.
-func (ms MultiService) Start() error {
-	return ms.foreach(func(s Service) error {
-		return s.Start()
-	})
+func (ms MultiService) Start() (err error) {
+	started := make(MultiService, 0, len(ms))
+	for _, service := range ms {
+		if err = service.Start(); err != nil {
+			return multierr.Combine(err, rollback(started))
+		}
+
+		started = append(started, service)
+	}
+
+	return
 }
 
 // Stop the service by running each hook's OnStop method.
 func (ms MultiService) Stop() error {
-	return ms.reverse().foreach(func(s Service) error {
-		return s.Stop()
-	})
-}
-
-func (ms MultiService) foreach(f func(Service) error) (err error) {
-	for _, service := range ms {
-		if err = f(service); err != nil {
-			break
-		}
-	}
-
-	return
+	return rollback(ms)
 }
 
 func (ms MultiService) reverse() MultiService {
@@ -70,4 +67,12 @@ func (ms MultiService) reverse() MultiService {
 	}
 
 	return ms
+}
+
+func rollback(ms MultiService) (err error) {
+	for _, service := range ms.reverse() {
+		err = multierr.Append(err, service.Stop())
+	}
+
+	return
 }
