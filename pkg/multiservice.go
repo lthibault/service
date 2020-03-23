@@ -1,7 +1,5 @@
 package service
 
-import "go.uber.org/multierr"
-
 // MultiService is a collection of hooks that are run in-order on startup, and in
 // reverse order (deferred-order) on shutdown.
 type MultiService []Service
@@ -14,21 +12,24 @@ func (ms *MultiService) Append(s Service) *MultiService {
 
 // Start the service by running each hook's OnStart method.
 func (ms MultiService) Start() (err error) {
-	started := make(MultiService, 0, len(ms))
 	for _, service := range ms {
 		if err = service.Start(); err != nil {
-			return multierr.Combine(err, rollback(started))
+			break
 		}
-
-		started = append(started, service)
 	}
 
 	return
 }
 
 // Stop the service by running each hook's OnStop method.
-func (ms MultiService) Stop() error {
-	return rollback(ms)
+func (ms MultiService) Stop() (err error) {
+	for _, service := range ms.reverse() {
+		if err = service.Stop(); err != nil {
+			break
+		}
+	}
+
+	return
 }
 
 func (ms MultiService) reverse() MultiService {
@@ -38,12 +39,4 @@ func (ms MultiService) reverse() MultiService {
 	}
 
 	return ms
-}
-
-func rollback(ms MultiService) (err error) {
-	for _, service := range ms.reverse() {
-		err = multierr.Append(err, service.Stop())
-	}
-
-	return
 }
