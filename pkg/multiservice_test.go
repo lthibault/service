@@ -3,7 +3,7 @@ package service_test
 import (
 	"testing"
 
-	"github.com/lthibault/service"
+	service "github.com/lthibault/service/pkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
