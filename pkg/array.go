@@ -11,13 +11,26 @@ package service
 type Array []Service
 
 // Append a hook to the Array
-func (ss Array) Append(s Service) Array {
-	return append(ss, s)
+func (array Array) Append(ss ...Service) Group {
+	return append(array, Array(ss))
+}
+
+// Go .
+func (array Array) Go(ss ...Service) Group {
+	return array.Append(Set(ss))
+}
+
+// Defer .
+func (array Array) Defer(ss ...Service) Group {
+	return deferredArray{
+		d: Array(ss),
+		a: array,
+	}
 }
 
 // Start the service by running each hook's OnStart method.
-func (ss Array) Start() (err error) {
-	for _, service := range ss {
+func (array Array) Start() (err error) {
+	for _, service := range array {
 		if err = service.Start(); err != nil {
 			break
 		}
@@ -27,8 +40,8 @@ func (ss Array) Start() (err error) {
 }
 
 // Stop the service by running each hook's OnStop method.
-func (ss Array) Stop() (err error) {
-	for _, service := range ss.reverse() {
+func (array Array) Stop() (err error) {
+	for _, service := range array.reverse() {
 		if err = service.Stop(); err != nil {
 			break
 		}
@@ -37,11 +50,48 @@ func (ss Array) Stop() (err error) {
 	return
 }
 
-func (ss Array) reverse() Array {
-	for i := len(ss)/2 - 1; i >= 0; i-- {
-		opp := len(ss) - 1 - i
-		ss[i], ss[opp] = ss[opp], ss[i]
+func (array Array) reverse() Array {
+	for i := len(array)/2 - 1; i >= 0; i-- {
+		opp := len(array) - 1 - i
+		array[i], array[opp] = array[opp], array[i]
 	}
 
-	return ss
+	return array
+}
+
+type deferredArray struct {
+	a, d Array
+}
+
+func (d deferredArray) Append(ss ...Service) Group {
+	d.a = append(d.a, Array(ss))
+	return d
+}
+
+func (d deferredArray) Go(ss ...Service) Group {
+	d.a = append(d.a, Set(ss))
+	return d
+}
+
+func (d deferredArray) Defer(ss ...Service) Group {
+	d.d = append(d.d, Array(ss))
+	return d
+}
+
+// Start the array, then the deferred service.
+func (d deferredArray) Start() (err error) {
+	if err = d.a.Start(); err == nil {
+		err = d.d.Start()
+	}
+
+	return
+}
+
+// Stop the array, then the deferred service.
+func (d deferredArray) Stop() (err error) {
+	if err = d.d.Stop(); err == nil {
+		err = d.a.Stop()
+	}
+
+	return
 }

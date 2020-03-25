@@ -43,21 +43,22 @@ func TestHierarchicalMultiService(t *testing.T) {
 	assert.Equal(t, intlog{1, 2, 3, -3, -2, -1}, *log)
 }
 
-// func TestDefer(t *testing.T) {
-// 	log := new(intlog)
+func TestDefer(t *testing.T) {
+	log := new(intlog)
 
-// 	svc := service.Array{}.
-// 		Append(log.WithCtr(1, -1)).
-// 		Defer(log.WithCtr(2, -2)).
-// 		Append(log.WithCtr(3, -3))
+	svc := service.Array{}.
+		Append(log.WithCtr(1, -1)).
+		Defer(log.WithCtr(3, -3)).
+		Defer(log.WithCtr(4, -4)).
+		Append(log.WithCtr(2, -2))
 
-// 	require.NoError(t, svc.Start())
-// 	assert.Equal(t, intlog{1, 3, 2}, *log)
+	require.NoError(t, svc.Start())
+	assert.Equal(t, intlog{1, 2, 3, 4}, *log)
 
-// 	// N.B.:  we check that deferred-ordering is enforced
-// 	require.NoError(t, svc.Stop())
-// 	assert.Equal(t, intlog{1, 3, 2, -2, -3, -1}, *log)
-// }
+	// N.B.:  we check that deferred-ordering is enforced
+	require.NoError(t, svc.Stop())
+	assert.Equal(t, intlog{1, 2, 3, 4, -4, -3, -2, -1}, *log)
+}
 
 type intlog []int
 

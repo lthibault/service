@@ -7,6 +7,14 @@ type Service interface {
 	Stop() error
 }
 
+// Group is a chainable interface for composing services.
+type Group interface {
+	Service
+	Append(...Service) Group
+	Defer(...Service) Group
+	Go(...Service) Group
+}
+
 // Hook encapsulates startup and shutdown functions, i.e. "hooks".
 // Nil hooks are no-ops.
 type Hook struct {
