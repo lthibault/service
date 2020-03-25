@@ -5,9 +5,8 @@ package service
 type MultiService []Service
 
 // Append a hook to the MultiService
-func (ms *MultiService) Append(s Service) *MultiService {
-	*ms = append(*ms, s)
-	return ms
+func (ms MultiService) Append(s Service) MultiService {
+	return append(ms, s)
 }
 
 // Start the service by running each hook's OnStart method.

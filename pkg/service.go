@@ -28,3 +28,11 @@ func (h Hook) Stop() error {
 
 	return h.OnStop()
 }
+
+// New Hook
+func New(start, stop func() error) Hook {
+	return Hook{
+		OnStart: start,
+		OnStop:  stop,
+	}
+}

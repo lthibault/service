@@ -9,83 +9,64 @@ import (
 )
 
 func TestMultiService(t *testing.T) {
-	res := []int{}
+	log := new(intlog)
 
 	svc := new(service.MultiService).
-		Append(service.Hook{
-			OnStart: func() error {
-				res = append(res, 1)
-				return nil
-			},
-			OnStop: func() error {
-				res = append(res, -1)
-				return nil
-			},
-		}).
-		Append(service.Hook{
-			OnStart: func() error {
-				res = append(res, 2)
-				return nil
-			},
-			OnStop: func() error {
-				res = append(res, -2)
-				return nil
-			},
-		})
+		Append(log.WithCtr(1, -1)).
+		Append(log.WithCtr(2, -2))
 
 	require.NoError(t, svc.Start())
+	assert.Equal(t, intlog{1, 2}, *log)
 
-	assert.Equal(t, []int{1, 2}, res)
-
+	// Check that deferred-ordering of services is enforced
 	require.NoError(t, svc.Stop())
-
-	// N.B.:  we check that deferred-ordering is enforced
-	assert.Equal(t, []int{1, 2, -2, -1}, res)
+	assert.Equal(t, intlog{1, 2, -2, -1}, *log)
 }
 
 func TestHierarchicalMultiService(t *testing.T) {
-	res := []int{}
+	log := new(intlog)
 
 	svc := new(service.MultiService).
 		Append(service.MultiService{
-			service.Hook{
-				OnStart: func() error {
-					res = append(res, 1)
-					return nil
-				},
-				OnStop: func() error {
-					res = append(res, -1)
-					return nil
-				},
-			},
-			service.Hook{
-				OnStart: func() error {
-					res = append(res, 2)
-					return nil
-				},
-				OnStop: func() error {
-					res = append(res, -2)
-					return nil
-				},
-			},
+			log.WithCtr(1, -1),
+			log.WithCtr(2, -2),
 		}).
-		Append(service.Hook{
-			OnStart: func() error {
-				res = append(res, 3)
-				return nil
-			},
-			OnStop: func() error {
-				res = append(res, -3)
-				return nil
-			},
-		})
+		Append(
+			log.WithCtr(3, -3),
+		)
 
 	require.NoError(t, svc.Start())
-
-	assert.Equal(t, []int{1, 2, 3}, res)
-
-	require.NoError(t, svc.Stop())
+	assert.Equal(t, intlog{1, 2, 3}, *log)
 
 	// N.B.:  we check that deferred-ordering is enforced
-	assert.Equal(t, []int{1, 2, 3, -3, -2, -1}, res)
+	require.NoError(t, svc.Stop())
+	assert.Equal(t, intlog{1, 2, 3, -3, -2, -1}, *log)
+}
+
+// func TestDefer(t *testing.T) {
+// 	log := new(intlog)
+
+// 	svc := new(service.MultiService).
+// 		Append(log.WithCtr(1, -1)).
+// 		Defer(log.WithCtr(2, -2)).
+// 		Append(log.WithCtr(3, -3))
+
+// 	require.NoError(t, svc.Start())
+// 	assert.Equal(t, intlog{1, 3, 2}, *log)
+
+// 	// N.B.:  we check that deferred-ordering is enforced
+// 	require.NoError(t, svc.Stop())
+// 	assert.Equal(t, intlog{1, 3, 2, -2, -3, -1}, *log)
+// }
+
+type intlog []int
+
+func (log *intlog) WithCtr(start, stop int) service.Hook {
+	return service.New(func() error {
+		*log = append(*log, start)
+		return nil
+	}, func() error {
+		*log = append(*log, stop)
+		return nil
+	})
 }
