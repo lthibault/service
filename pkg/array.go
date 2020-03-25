@@ -11,13 +11,13 @@ package service
 type Array []Service
 
 // Append a hook to the Array
-func (ms Array) Append(s Service) Array {
-	return append(ms, s)
+func (ss Array) Append(s Service) Array {
+	return append(ss, s)
 }
 
 // Start the service by running each hook's OnStart method.
-func (ms Array) Start() (err error) {
-	for _, service := range ms {
+func (ss Array) Start() (err error) {
+	for _, service := range ss {
 		if err = service.Start(); err != nil {
 			break
 		}
@@ -27,8 +27,8 @@ func (ms Array) Start() (err error) {
 }
 
 // Stop the service by running each hook's OnStop method.
-func (ms Array) Stop() (err error) {
-	for _, service := range ms.reverse() {
+func (ss Array) Stop() (err error) {
+	for _, service := range ss.reverse() {
 		if err = service.Stop(); err != nil {
 			break
 		}
@@ -37,11 +37,11 @@ func (ms Array) Stop() (err error) {
 	return
 }
 
-func (ms Array) reverse() Array {
-	for i := len(ms)/2 - 1; i >= 0; i-- {
-		opp := len(ms) - 1 - i
-		ms[i], ms[opp] = ms[opp], ms[i]
+func (ss Array) reverse() Array {
+	for i := len(ss)/2 - 1; i >= 0; i-- {
+		opp := len(ss) - 1 - i
+		ss[i], ss[opp] = ss[opp], ss[i]
 	}
 
-	return ms
+	return ss
 }
