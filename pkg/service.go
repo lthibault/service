@@ -1,48 +1,74 @@
 package service
 
-// Service is defined by a set of hook methods.
-// Work SHOULD happen in the Start() method;  Stop() should only contain teardown logic.
+import "github.com/jbenet/goprocess"
+
+type (
+	// Proc .
+	Proc interface {
+		goprocess.Process
+	}
+
+	// ProcFunc .
+	ProcFunc func(Proc)
+)
+
+// Service .
 type Service interface {
 	Start() error
 	Stop() error
 }
 
-// Group is a chainable interface for composing services.
-type Group interface {
-	Service
-	Append(...Service) Group
-	Defer(...Service) Group
-	Go(...Service) Group
+type process struct {
+	start, stop func() error
 }
 
-// Hook encapsulates startup and shutdown functions, i.e. "hooks".
-// Nil hooks are no-ops.
-type Hook struct {
-	OnStart, OnStop func() error
+func (p process) Append(ss ...Service) Array {
+	return append(Array{p}, Array(ss)...)
 }
 
-// Start call OnStart if it is defined.
-func (h Hook) Start() error {
-	if h.OnStart == nil {
+func (p process) Go(ss ...Service) Set {
+	return append(Set{p}, Set(ss)...)
+}
+
+func (p process) Start() error {
+	if p.start == nil {
 		return nil
 	}
 
-	return h.OnStart()
+	return p.start()
 }
 
-// Stop calls OnStop if it is defined.
-func (h Hook) Stop() error {
-	if h.OnStop == nil {
+func (p process) Stop() error {
+	if p.start == nil {
 		return nil
 	}
 
-	return h.OnStop()
+	return p.stop()
 }
 
-// New Hook
-func New(start, stop func() error) Hook {
-	return Hook{
-		OnStart: start,
-		OnStop:  stop,
+// New service
+func New(f ProcFunc) Service {
+	var p Proc
+	return process{
+		start: func() error {
+			p = goprocess.Background().Go(func(p goprocess.Process) {
+				f(p)
+			})
+
+			return nil
+		},
+		stop: func() error {
+			return p.Close()
+		},
 	}
+}
+
+// With bundles individual services into a group.
+func With(ss ...Service) Array {
+	return Array(ss)
+}
+
+// Go bundles individual services into a set.
+func Go(ss ...Service) Set {
+	return Set(ss)
 }

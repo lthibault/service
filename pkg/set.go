@@ -10,6 +10,16 @@ import "golang.org/x/sync/errgroup"
 // pools.
 type Set []Service
 
+// Append .
+func (set Set) Append(ss ...Service) Array {
+	return With(set, Array(ss))
+}
+
+// Go runs a service in a Set.
+func (set Set) Go(ss ...Service) Set {
+	return append(set, Set(ss))
+}
+
 // Start each service in its own goroutine.  There is no synchronization.
 func (set Set) Start() error {
 	var g errgroup.Group
@@ -26,9 +36,4 @@ func (set Set) Stop() error {
 		g.Go(service.Stop)
 	}
 	return g.Wait()
-}
-
-// Add a service
-func (set Set) Add(s Service) Set {
-	return append(set, s)
 }

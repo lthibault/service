@@ -11,21 +11,13 @@ package service
 type Array []Service
 
 // Append a hook to the Array
-func (array Array) Append(ss ...Service) Group {
+func (array Array) Append(ss ...Service) Service {
 	return append(array, Array(ss))
 }
 
 // Go .
-func (array Array) Go(ss ...Service) Group {
-	return array.Append(Set(ss))
-}
-
-// Defer .
-func (array Array) Defer(ss ...Service) Group {
-	return deferredArray{
-		d: Array(ss),
-		a: array,
-	}
+func (array Array) Go(ss ...Service) Service {
+	return append(array, Set(ss))
 }
 
 // Start the service by running each hook's OnStart method.
@@ -57,41 +49,4 @@ func (array Array) reverse() Array {
 	}
 
 	return array
-}
-
-type deferredArray struct {
-	a, d Array
-}
-
-func (d deferredArray) Append(ss ...Service) Group {
-	d.a = append(d.a, Array(ss))
-	return d
-}
-
-func (d deferredArray) Go(ss ...Service) Group {
-	d.a = append(d.a, Set(ss))
-	return d
-}
-
-func (d deferredArray) Defer(ss ...Service) Group {
-	d.d = append(d.d, Array(ss))
-	return d
-}
-
-// Start the array, then the deferred service.
-func (d deferredArray) Start() (err error) {
-	if err = d.a.Start(); err == nil {
-		err = d.d.Start()
-	}
-
-	return
-}
-
-// Stop the array, then the deferred service.
-func (d deferredArray) Stop() (err error) {
-	if err = d.d.Stop(); err == nil {
-		err = d.a.Stop()
-	}
-
-	return
 }
