@@ -11,7 +11,7 @@ import (
 func TestMultiService(t *testing.T) {
 	log := new(intlog)
 
-	svc := new(service.MultiService).
+	svc := service.Array{}.
 		Append(log.WithCtr(1, -1)).
 		Append(log.WithCtr(2, -2))
 
@@ -26,8 +26,8 @@ func TestMultiService(t *testing.T) {
 func TestHierarchicalMultiService(t *testing.T) {
 	log := new(intlog)
 
-	svc := new(service.MultiService).
-		Append(service.MultiService{
+	svc := service.Array{}.
+		Append(service.Array{
 			log.WithCtr(1, -1),
 			log.WithCtr(2, -2),
 		}).
@@ -46,7 +46,7 @@ func TestHierarchicalMultiService(t *testing.T) {
 // func TestDefer(t *testing.T) {
 // 	log := new(intlog)
 
-// 	svc := new(service.MultiService).
+// 	svc := service.Array{}.
 // 		Append(log.WithCtr(1, -1)).
 // 		Defer(log.WithCtr(2, -2)).
 // 		Append(log.WithCtr(3, -3))

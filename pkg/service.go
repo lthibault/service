@@ -1,12 +1,14 @@
 package service
 
-// Service .
+// Service is defined by a set of hook methods.
+// Work SHOULD happen in the Start() method;  Stop() should only contain teardown logic.
 type Service interface {
 	Start() error
 	Stop() error
 }
 
-// Hook encapsulates startup and shutdown functions.
+// Hook encapsulates startup and shutdown functions, i.e. "hooks".
+// Nil hooks are no-ops.
 type Hook struct {
 	OnStart, OnStop func() error
 }
