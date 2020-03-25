@@ -1,17 +1,5 @@
 package service
 
-import "github.com/jbenet/goprocess"
-
-type (
-	// Proc .
-	Proc interface {
-		goprocess.Process
-	}
-
-	// ProcFunc .
-	ProcFunc func(Proc)
-)
-
 // Service .
 type Service interface {
 	Start() error
