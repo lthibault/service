@@ -24,9 +24,19 @@ func (array Array) Go(ss ...Service) Set {
 
 // Start the service by running each hook's OnStart method.
 func (array Array) Start() (err error) {
+	var log = make(txlog, 0, len(array))
+
 	for _, service := range array {
 		if err = service.Start(); err != nil {
 			break
+		}
+
+		log = append(log, service)
+	}
+
+	if err != nil {
+		if txerr := log.Rollback(); txerr != nil {
+			return multierr.Append(txerr, err)
 		}
 	}
 
@@ -35,15 +45,11 @@ func (array Array) Start() (err error) {
 
 // Stop the service by running each hook's OnStop method.
 func (array Array) Stop() (err error) {
-	var log = make(txlog, 0, len(array))
-
 	for _, service := range array.reverse() {
-		if err = multierr.Append(err, service.Stop()); err == nil {
-			log = append(log, service)
-		}
+		err = multierr.Append(err, service.Stop())
 	}
 
-	return log.MaybeRollback(err)
+	return
 }
 
 func (array Array) reverse() Array {
@@ -57,10 +63,6 @@ func (array Array) reverse() Array {
 
 type txlog []Service
 
-func (log txlog) MaybeRollback(err error) error {
-	if err != nil {
-		return Array(log).Stop()
-	}
-
-	return nil
+func (log txlog) Rollback() error {
+	return Array(log).Stop()
 }

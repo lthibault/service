@@ -36,10 +36,17 @@ func (m mockService) Go(ss ...service.Service) service.Service {
 
 type intlog []int
 
-func (log *intlog) WithCtr(start, stop int) service.Service {
+func (log *intlog) WithEntry(start, stop int) service.Service {
 	return mockService{
 		start: log.append(start),
 		stop:  log.append(stop),
+	}
+}
+
+func (log intlog) WithError(start, stop error) service.Service {
+	return mockService{
+		start: func() error { return start },
+		stop:  func() error { return stop },
 	}
 }
 
@@ -52,10 +59,17 @@ func (log *intlog) append(i int) func() error {
 
 type ctrlog int32
 
-func (log *ctrlog) WithCtr(start, stop int32) service.Service {
+func (log *ctrlog) WithIncr(start, stop int32) service.Service {
 	return mockService{
 		start: log.incr(start),
 		stop:  log.incr(stop),
+	}
+}
+
+func (log ctrlog) WithError(start, stop error) service.Service {
+	return mockService{
+		start: func() error { return start },
+		stop:  func() error { return stop },
 	}
 }
 

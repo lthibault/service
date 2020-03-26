@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"go.uber.org/multierr"
-	"golang.org/x/sync/errgroup"
 )
 
 // Set is a collection of services that are collectively started and stopped as a group.
@@ -26,16 +25,36 @@ func (set Set) Go(ss ...Service) Set {
 }
 
 // Start each service in its own goroutine.  There is no synchronization.
-func (set Set) Start() error {
+func (set Set) Start() (err error) {
 	var mu sync.Mutex
 	log := make(txlog, len(set))
 
-	var g errgroup.Group
+	var wg sync.WaitGroup
+	wg.Add(len(set))
+
 	for i, s := range set {
-		g.Go(set.startService(&mu, log, i, s))
+		go func(i int, s Service) {
+			defer wg.Done()
+
+			switch e := s.Start(); e {
+			case nil:
+				log[i] = s
+			default:
+				mu.Lock()
+				defer mu.Unlock()
+
+				err = multierr.Append(err, e)
+			}
+		}(i, s)
 	}
 
-	return log.MaybeRollbackAsync(g.Wait())
+	wg.Wait()
+
+	if err != nil {
+		return multierr.Append(log.RollbackAsync(), err)
+	}
+
+	return err
 }
 
 // Stop each service in its own goroutine.  There is no synchronization.
@@ -61,30 +80,13 @@ func (set Set) Stop() (err error) {
 	return
 }
 
-func (Set) startService(mu *sync.Mutex, log txlog, i int, s Service) func() error {
-	return func() (err error) {
-		if err = s.Start(); err != nil {
-			mu.Lock()
-			defer mu.Unlock()
-
-			log[i] = s
+func (log txlog) RollbackAsync() error {
+	started := log[:0]
+	for _, service := range log {
+		if service != nil {
+			started = append(started, service)
 		}
-
-		return
-	}
-}
-
-func (log txlog) MaybeRollbackAsync(err error) error {
-	if err != nil {
-		started := log[:0]
-		for _, service := range log {
-			if service != nil {
-				started = append(started, service)
-			}
-		}
-
-		return Set(started).Stop()
 	}
 
-	return nil
+	return Set(started).Stop()
 }
