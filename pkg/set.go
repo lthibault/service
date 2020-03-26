@@ -21,7 +21,7 @@ func (set Set) Append(ss ...Service) Array {
 
 // Go runs a service in a Set.
 func (set Set) Go(ss ...Service) Set {
-	return append(set, Set(ss)...)
+	return With(set).Go(Set(ss)...)
 }
 
 // Start each service in its own goroutine.  There is no synchronization.
