@@ -11,13 +11,13 @@ package service
 type Array []Service
 
 // Append a hook to the Array
-func (array Array) Append(ss ...Service) Service {
-	return append(array, Array(ss))
+func (array Array) Append(ss ...Service) Array {
+	return append(array, Array(ss)...)
 }
 
 // Go .
-func (array Array) Go(ss ...Service) Service {
-	return append(array, Set(ss))
+func (array Array) Go(ss ...Service) Set {
+	return Go(array, Set(ss))
 }
 
 // Start the service by running each hook's OnStart method.
